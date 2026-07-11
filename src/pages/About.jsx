@@ -21,7 +21,7 @@ export default function About() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn>
               <img
-                src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80&auto=format&fit=crop"
+                src="/images/mission.jpg"
                 alt="Students learning in a modern allied health sciences classroom"
                 loading="lazy"
                 className="rounded-2xl shadow-card w-full h-[400px] object-cover"

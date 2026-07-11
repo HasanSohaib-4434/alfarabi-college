@@ -11,7 +11,7 @@ export default function Home() {
       <section className="relative min-h-[85vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=1920&q=80&auto=format&fit=crop"
+            src="/images/hero.jpg"
             alt="Modern medical laboratory with healthcare professionals"
             className="w-full h-full object-cover"
           />
@@ -109,7 +109,7 @@ export default function Home() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1920&q=80&auto=format&fit=crop"
+            src="/images/cta-banner.jpg"
             alt="Healthcare professionals collaborating in a hospital setting"
             loading="lazy"
             className="w-full h-full object-cover"

@@ -32,7 +32,7 @@ export default function Admissions() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1920&q=80&auto=format&fit=crop"
+            src="/images/admissions-hero.jpg"
             alt="Students celebrating academic achievement at graduation"
             className="w-full h-full object-cover"
           />
