@@ -30,22 +30,37 @@ export default function Contact() {
 
     setLoading(true)
     try {
-      const response = await fetch('/.netlify/functions/contact', {
+      const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
 
-      const data = await response.json()
+      const contentType = response.headers.get('content-type') || ''
+      let data = {}
+
+      if (contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        const text = await response.text()
+        if (text.trim().startsWith('<')) {
+          throw new Error('Contact service unavailable. Please try again later.')
+        }
+        try {
+          data = JSON.parse(text)
+        } catch {
+          data = { error: text || 'Unexpected server response.' }
+        }
+      }
 
       if (response.ok) {
         toast.success('Message sent successfully! Check your email for confirmation.')
         setForm(initialForm)
       } else {
-        toast.error(data.error || 'Failed to send message. Please try again.')
+        toast.error(data.error || data.msg || 'Failed to send message. Please try again.')
       }
-    } catch {
-      toast.error('Network error. Please try again or call us directly.')
+    } catch (err) {
+      toast.error(err.message || 'Network error. Please try again or call us directly.')
     } finally {
       setLoading(false)
     }

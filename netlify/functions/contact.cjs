@@ -4,6 +4,19 @@ const COLLEGE_NAME = 'Al-Farabi College of Allied Health Sciences'
 const COLLEGE_COLOR = '#0d9488'
 const ACCENT_COLOR = '#e8910a'
 
+const jsonHeaders = {
+  'Content-Type': 'application/json',
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function adminEmailHtml({ name, email, phone, course, message }) {
   return `
 <!DOCTYPE html>
@@ -22,6 +35,7 @@ function adminEmailHtml({ name, email, phone, course, message }) {
             <td style="background:${COLLEGE_COLOR};padding:28px 32px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">${COLLEGE_NAME}</h1>
               <p style="margin:8px 0 0;color:#d5f0ed;font-size:14px;">New Contact Form Submission</p>
+              <p style="margin:8px 0 0;color:#d5f0ed;font-size:13px;">Received on ${new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</p>
             </td>
           </tr>
           <tr>
@@ -42,7 +56,9 @@ function adminEmailHtml({ name, email, phone, course, message }) {
                 </tr>
                 <tr style="background:#f9fafb;">
                   <td style="padding:12px 16px;font-weight:600;color:#374151;border-bottom:1px solid #e5e7eb;">Phone</td>
-                  <td style="padding:12px 16px;color:#111827;border-bottom:1px solid #e5e7eb;">${phone}</td>
+                  <td style="padding:12px 16px;color:#111827;border-bottom:1px solid #e5e7eb;">
+                    <a href="tel:${phone}" style="color:${COLLEGE_COLOR};text-decoration:none;">${phone}</a>
+                  </td>
                 </tr>
                 <tr>
                   <td style="padding:12px 16px;font-weight:600;color:#374151;border-bottom:1px solid #e5e7eb;">Course</td>
@@ -71,7 +87,7 @@ function adminEmailHtml({ name, email, phone, course, message }) {
 </html>`
 }
 
-function clientEmailHtml({ name, course }) {
+function clientEmailHtml({ name, email, phone, course, message }) {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -99,6 +115,23 @@ function clientEmailHtml({ name, course }) {
                 Our admissions team will review your message and get back to you shortly.
               </p>
               <div style="background:#eef9f8;border-left:4px solid ${ACCENT_COLOR};padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;">
+                <p style="margin:0 0 8px;color:#1e5d58;font-weight:600;font-size:14px;">Your Submission Details</p>
+                <table width="100%" cellpadding="6" cellspacing="0">
+                  <tr>
+                    <td style="color:#666666;font-size:14px;font-weight:600;width:90px;">Email:</td>
+                    <td style="color:#333333;font-size:14px;">${email}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#666666;font-size:14px;font-weight:600;">Phone:</td>
+                    <td style="color:#333333;font-size:14px;">${phone}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#666666;font-size:14px;font-weight:600;vertical-align:top;">Message:</td>
+                    <td style="color:#333333;font-size:14px;line-height:1.6;">${message.replace(/\n/g, '<br>')}</td>
+                  </tr>
+                </table>
+              </div>
+              <div style="background:#eef9f8;border-left:4px solid ${ACCENT_COLOR};padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;">
                 <p style="margin:0 0 8px;color:#1e5d58;font-weight:600;font-size:14px;">What's Next?</p>
                 <ul style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;">
                   <li>Our team typically responds within 1–2 business days</li>
@@ -125,43 +158,12 @@ function clientEmailHtml({ name, course }) {
 </html>`
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
 exports.handler = async (event) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
-  }
-
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers, body: '' }
-  }
-
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers,
+      headers: jsonHeaders,
       body: JSON.stringify({ error: 'Method not allowed' }),
-    }
-  }
-
-  const { EMAIL_USER, EMAIL_PASS, ADMIN_EMAIL } = process.env
-
-  if (!EMAIL_USER || !EMAIL_PASS || !ADMIN_EMAIL) {
-    console.error('Missing email environment variables')
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Email service is not configured. Please contact the administrator.' }),
     }
   }
 
@@ -171,71 +173,102 @@ exports.handler = async (event) => {
   } catch {
     return {
       statusCode: 400,
-      headers,
-      body: JSON.stringify({ error: 'Invalid request body' }),
+      headers: jsonHeaders,
+      body: JSON.stringify({ msg: 'Invalid request body', error: 'Invalid request body' }),
     }
   }
 
-  const name = escapeHtml(body.name || '').trim()
-  const email = (body.email || '').trim()
-  const phone = escapeHtml(body.phone || '').trim()
-  const course = escapeHtml(body.course || '').trim()
-  const message = escapeHtml(body.message || '').trim()
+  const { name, email, phone, course, message } = body
 
   if (!name || !email || !phone || !course || !message) {
     return {
       statusCode: 400,
-      headers,
-      body: JSON.stringify({ error: 'All fields are required' }),
+      headers: jsonHeaders,
+      body: JSON.stringify({ msg: 'Please provide all required fields', error: 'All fields are required' }),
     }
   }
 
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    return {
+      statusCode: 500,
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        msg: 'fail',
+        error: 'Email service is not configured. Please contact the administrator.',
+      }),
+    }
+  }
+
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER
+
+  const safeName = escapeHtml(name).trim()
+  const safeEmail = email.trim()
+  const safePhone = escapeHtml(phone).trim()
+  const safeCourse = escapeHtml(course).trim()
+  const safeMessage = escapeHtml(message).trim()
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
+  if (!emailRegex.test(safeEmail)) {
     return {
       statusCode: 400,
-      headers,
-      body: JSON.stringify({ error: 'Invalid email address' }),
+      headers: jsonHeaders,
+      body: JSON.stringify({ msg: 'Invalid email address', error: 'Invalid email address' }),
     }
   }
 
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
-      user: EMAIL_USER,
-      pass: EMAIL_PASS,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   })
 
-  const safeData = { name, email, phone, course, message }
+  const safeData = {
+    name: safeName,
+    email: safeEmail,
+    phone: safePhone,
+    course: safeCourse,
+    message: safeMessage,
+  }
+
+  const clientMailOptions = {
+    from: `"${COLLEGE_NAME}" <${process.env.EMAIL_USER}>`,
+    to: safeEmail,
+    subject: `Thank you for contacting ${COLLEGE_NAME}`,
+    html: clientEmailHtml(safeData),
+  }
+
+  const adminMailOptions = {
+    from: `"${COLLEGE_NAME} Contact Form" <${process.env.EMAIL_USER}>`,
+    to: adminEmail,
+    replyTo: safeEmail,
+    subject: `New Inquiry: ${safeCourse} — ${safeName}`,
+    html: adminEmailHtml(safeData),
+  }
 
   try {
-    await transporter.sendMail({
-      from: `"${COLLEGE_NAME}" <${EMAIL_USER}>`,
-      to: ADMIN_EMAIL,
-      replyTo: email,
-      subject: `New Inquiry: ${course} — ${name}`,
-      html: adminEmailHtml(safeData),
-    })
-
-    await transporter.sendMail({
-      from: `"${COLLEGE_NAME}" <${EMAIL_USER}>`,
-      to: email,
-      subject: `Thank you for contacting ${COLLEGE_NAME}`,
-      html: clientEmailHtml({ name, course }),
-    })
+    await Promise.all([
+      transporter.sendMail(clientMailOptions),
+      transporter.sendMail(adminMailOptions),
+    ])
 
     return {
       statusCode: 200,
-      headers,
-      body: JSON.stringify({ success: true, message: 'Emails sent successfully' }),
+      headers: jsonHeaders,
+      body: JSON.stringify({ msg: 'success', success: true, message: 'Emails sent successfully' }),
     }
-  } catch (err) {
-    console.error('Email send error:', err)
+  } catch (error) {
+    console.error('Email send error:', error)
     return {
       statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to send email. Please try again later.' }),
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        msg: 'fail',
+        error: error.message || 'Failed to send email. Please try again later.',
+      }),
     }
   }
 }
