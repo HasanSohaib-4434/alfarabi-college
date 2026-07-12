@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "dev:netlify": "netlify dev"
+    "dev:netlify": "netlify dev",
+    "deploy": "npm run build && netlify deploy --prod",
+    "deploy:preview": "npm run build && netlify deploy"
   },
   "dependencies": {
     "framer-motion": "^11.15.0",
