@@ -92,7 +92,7 @@ export const features = [
 
 export const contactInfo = {
   address: "Al-Farabi College of Allied Health Sciences, Faisalabad, Pakistan",
-  phone: "+92 300 0000000",
+  phone: "+92 300 9656266",
   email: "info@alfarabicollege.edu.pk",
   hours: "Mon – Sat: 9:00 AM – 5:00 PM",
   mapEmbed:
